@@ -1,3 +1,6 @@
+# ===========================
+# Imports og biblioteker
+# ===========================
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
@@ -13,7 +16,9 @@ m2 = 2.0  # kg
 k = 200.0  # N/m
 L0 = 5.0  # m
 
+# ===========================
 # Startbetingelser
+# ===========================
 initial_state = [
     -10, 0,  # x1, y1
     0, 20,  # vx1, vy1
@@ -27,6 +32,9 @@ num_points = 1000
 t = np.linspace(0, t_end, num_points)
 
 
+# ===========================
+# Fysikkmotor
+# ===========================
 def system_equations(state, t):
     """
     Differensialligninger for to-partikkel fjærsystem
@@ -69,7 +77,7 @@ def system_equations(state, t):
 solution = odeint(system_equations, initial_state, t)
 
 # ===========================
-# Pygame-animasjon
+# Pygame oppsett
 # ===========================
 pygame.init()
 
@@ -77,19 +85,46 @@ WIDTH, HEIGHT = 1200, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("To-partikkel fjær simulering")
 
-clock = pygame.time.Clock()
-
 # Skalering mellom meter og piksler
 scaling_factor = 20.0
 center_x = WIDTH / 2
 center_y = HEIGHT / 2
 
+# Knapp-innstillinger
+button_width = 100
+button_height = 50
+button_margin = 20
 
+button_start = pygame.Rect(20, HEIGHT - 70, button_width, button_height)
+button_reset = pygame.Rect(140, HEIGHT - 70, button_width, button_height)
+button_pause = pygame.Rect(260, HEIGHT - 70, button_width, button_height)
+
+
+# ===========================
+# Hjelpefunksjoner
+# ===========================
 def to_screen(x, y):
     return (center_x + x * scaling_factor, center_y - y * scaling_factor)
 
 
-pRadius = 10
+def draw_buttons(screen, simulation_running, paused):
+    # Start/Fortsett knapp
+    button_color = (128, 128, 128) if simulation_running and not paused else (0, 255, 0)
+    pygame.draw.rect(screen, button_color, button_start)
+
+    # Reset knapp
+    pygame.draw.rect(screen, (255, 0, 0), button_reset)
+
+    # Pause knapp
+    button_color = (0, 255, 255) if paused else (128, 128, 128)
+    pygame.draw.rect(screen, button_color, button_pause)
+
+    # Tekst på knappene
+    font = pygame.font.SysFont('Arial', 24)
+    start_text = "Start" if not simulation_running else "Fortsett"
+    screen.blit(font.render(start_text, True, (0, 0, 0)), (button_start.x + 20, button_start.y + 10))
+    screen.blit(font.render('Reset', True, (0, 0, 0)), (button_reset.x + 20, button_reset.y + 10))
+    screen.blit(font.render('Pause', True, (0, 0, 0)), (button_pause.x + 20, button_pause.y + 10))
 
 
 def draw_spring(x1, y1, x2, y2):
@@ -119,9 +154,16 @@ def draw_spring(x1, y1, x2, y2):
     pygame.draw.line(screen, (255, 255, 255), to_screen(*current_pos), to_screen(x2, y2), 2)
 
 
+# ===========================
+# Animasjonsløkke
+# ===========================
+clock = pygame.time.Clock()
 running = True
-index = 0  # Indeks i løsningstabellen
+simulation_running = False
+paused = False
+index = 0
 max_index = len(t) - 1
+pRadius = 10
 
 font = pygame.font.SysFont('Arial', 24)
 
@@ -129,6 +171,25 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = event.pos
+
+            # Start/Fortsett knapp
+            if button_start.collidepoint(mouse_pos):
+                if not simulation_running or paused:
+                    simulation_running = True
+                    paused = False
+
+            # Reset knapp
+            elif button_reset.collidepoint(mouse_pos):
+                simulation_running = False
+                paused = False
+                index = 0
+
+            # Pause knapp
+            elif button_pause.collidepoint(mouse_pos) and simulation_running:
+                paused = not paused
 
     screen.fill((0, 0, 0))
 
@@ -138,22 +199,62 @@ while running:
     x2_sol = solution[index, 4]
     y2_sol = solution[index, 5]
 
+    # Hent hastigheter
+    vx1_sol = solution[index, 2]
+    vy1_sol = solution[index, 3]
+    vx2_sol = solution[index, 6]
+    vy2_sol = solution[index, 7]
+
+    # Beregn akselerasjoner fra systemligningene
+    current_state = [x1_sol, y1_sol, vx1_sol, vy1_sol,
+                     x2_sol, y2_sol, vx2_sol, vy2_sol]
+    derivatives = system_equations(current_state, t[index])
+    ax1_sol = derivatives[2]
+    ay1_sol = derivatives[3]
+    ax2_sol = derivatives[6]
+    ay2_sol = derivatives[7]
+
     draw_spring(x1_sol, y1_sol, x2_sol, y2_sol)
 
     # Tegn partiklene
     pygame.draw.circle(screen, (255, 0, 0), to_screen(x1_sol, y1_sol), pRadius)
     pygame.draw.circle(screen, (0, 0, 255), to_screen(x2_sol, y2_sol), pRadius)
 
+    # Vis tid
     time_text = font.render(f"Tid: {t[index]:.2f} s", True, (255, 255, 255))
     screen.blit(time_text, (20, 20))
+
+    # Vis informasjon for partikkel 1
+    pos_text_p1 = font.render(f"Posisjon (P1): ({x1_sol:.1f}, {y1_sol:.1f}) m", True, (255, 255, 255))
+    vel_text_p1 = font.render(f"Hastighet (P1): ({vx1_sol:.1f}, {vy1_sol:.1f}) m/s", True, (255, 255, 255))
+    acc_text_p1 = font.render(f"Akselerasjon (P1): ({ax1_sol:.1f}, {ay1_sol:.1f}) m/s²", True, (255, 255, 255))
+
+    # Vis informasjon for partikkel 2
+    pos_text_p2 = font.render(f"Posisjon (P2): ({x2_sol:.1f}, {y2_sol:.1f}) m", True, (255, 255, 255))
+    vel_text_p2 = font.render(f"Hastighet (P2): ({vx2_sol:.1f}, {vy2_sol:.1f}) m/s", True, (255, 255, 255))
+    acc_text_p2 = font.render(f"Akselerasjon (P2): ({ax2_sol:.1f}, {ay2_sol:.1f}) m/s²", True, (255, 255, 255))
+
+    # Tegn tekst på skjermen
+    screen.blit(pos_text_p1, (20, 60))
+    screen.blit(vel_text_p1, (20, 90))
+    screen.blit(acc_text_p1, (20, 120))
+
+    screen.blit(pos_text_p2, (20, 160))
+    screen.blit(vel_text_p2, (20, 190))
+    screen.blit(acc_text_p2, (20, 220))
+
+    # Tegn knappene
+    draw_buttons(screen, simulation_running, paused)
 
     pygame.display.flip()
     clock.tick(60)
 
-    # Oppdater indeks for å animere
-    index += 1
-    if index > max_index:
-        index = max_index
+    # Oppdater indeks hvis simuleringen kjører og ikke er pauset
+    if simulation_running and not paused:
+        index += 1
+        if index > max_index:
+            simulation_running = False
+            index = max_index
 
 pygame.quit()
 
