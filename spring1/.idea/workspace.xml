@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="fbf42613-6a25-476d-bc2e-2a65455ab868" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/script.py" beforeDir="false" afterPath="$PROJECT_DIR$/script.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../spring2/script.py" beforeDir="false" afterPath="$PROJECT_DIR$/../spring2/script.py" afterDir="false" />
-    </list>
+    <list default="true" id="fbf42613-6a25-476d-bc2e-2a65455ab868" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -61,7 +58,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1734458738441</updated>
-      <workItem from="1734458744686" duration="680000" />
+      <workItem from="1734458744686" duration="985000" />
     </task>
     <servers />
   </component>
